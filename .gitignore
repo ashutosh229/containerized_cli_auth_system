@@ -1,0 +1,7 @@
+.cache
+data/
+*.db
+*.db-shm
+*.db-wal
+authcli
+authcli.exe
