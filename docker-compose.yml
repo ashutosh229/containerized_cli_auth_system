@@ -1,0 +1,17 @@
+services:
+  authcli:
+    build: .
+    image: containerized-cli-auth-system:latest
+    stdin_open: true
+    tty: true
+    environment:
+      DB_DSN: /data/auth.db
+      SESSION_TIMEOUT: 30m
+      MAX_FAILED_ATTEMPTS: 5
+      LOCKOUT_DURATION: 15m
+      TOTP_ISSUER: Containerized CLI Auth
+    volumes:
+      - auth-data:/data
+
+volumes:
+  auth-data:
