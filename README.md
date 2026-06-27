@@ -65,19 +65,19 @@ Data is persisted to a SQLite database stored in a Docker volume, so user accoun
 ```mermaid
 flowchart TD
 
-    A[CLI Shell (interactive)\ncmd/authcli → internal/cli]
+    A["CLI Shell (interactive)<br/>cmd/authcli → internal/cli"]
 
-    B[Auth Service Layer\ninternal/auth]
+    B["Auth Service Layer<br/>internal/auth"]
 
-    B1[Register / Login / Logout]
-    B2[TOTP Enable / Disable / Verify]
-    B3[Account Lockout Logic]
-    B4[In-Memory Session Store]
+    B1["Register / Login / Logout"]
+    B2["TOTP Enable / Disable / Verify"]
+    B3["Account Lockout Logic"]
+    B4["In-Memory Session Store"]
 
-    C[Persistence Layer (SQLite)\ninternal/store]
+    C["Persistence Layer (SQLite)<br/>internal/store"]
 
-    C1[UserStore (CRUD operations)]
-    C2[Migration runner (migrations/*.sql)]
+    C1["UserStore (CRUD operations)"]
+    C2["Migration runner (migrations/*.sql)"]
 
     A --> B
     B --> C
