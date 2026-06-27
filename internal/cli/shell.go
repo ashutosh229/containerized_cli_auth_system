@@ -65,7 +65,7 @@ func NewShell(in io.Reader, out io.Writer, service *auth.Service) *Shell {
 func (s *Shell) Run(ctx context.Context) error {
 	cfg := &readline.Config{
 		Prompt:          s.prompt(),
-		HistoryFile:     "/tmp/authcli-history",
+		HistoryFile:     historyFile(),
 		AutoComplete:    s.completer,
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
