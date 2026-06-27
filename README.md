@@ -62,49 +62,34 @@ Data is persisted to a SQLite database stored in a Docker volume, so user accoun
 
 ## Architecture
 
-┌──────────────────────────────────────────────────────┐
+```mermaid
+flowchart TD
 
-│ CLI Shell (interactive) │
+    A[CLI Shell (interactive)\ncmd/authcli → internal/cli]
 
-│ cmd/authcli ──► internal/cli │
+    B[Auth Service Layer\ninternal/auth]
 
-└──────────────────────────┬───────────────────────────┘
+    B1[Register / Login / Logout]
+    B2[TOTP Enable / Disable / Verify]
+    B3[Account Lockout Logic]
+    B4[In-Memory Session Store]
 
-│
+    C[Persistence Layer (SQLite)\ninternal/store]
 
-▼
+    C1[UserStore (CRUD operations)]
+    C2[Migration runner (migrations/*.sql)]
 
-┌──────────────────────────────────────────────────────┐
+    A --> B
+    B --> C
 
-│ Auth Service Layer │
+    B --> B1
+    B --> B2
+    B --> B3
+    B --> B4
 
-│ internal/auth │
-
-│ ├─ Register / Login / Logout │
-
-│ ├─ TOTP Enable / Disable / Verify │
-
-│ ├─ Account Lockout Logic │
-
-│ └─ In-Memory Session Store │
-
-└──────────────────────────┬───────────────────────────┘
-
-│
-
-▼
-
-┌──────────────────────────────────────────────────────┐
-
-│ Persistence Layer (SQLite) │
-
-│ internal/store │
-
-│ ├─ UserStore (CRUD operations) │
-
-│ └─ Migration runner (migrations/\*.sql) │
-
-└──────────────────────────────────────────────────────┘
+    C --> C1
+    C --> C2
+```
 
 ---
 
