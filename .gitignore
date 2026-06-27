@@ -3,5 +3,7 @@ data/
 *.db
 *.db-shm
 *.db-wal
-authcli
-authcli.exe
+/authcli
+
+# custom  
+TODO.md
