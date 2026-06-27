@@ -10,5 +10,6 @@ services:
       MAX_FAILED_ATTEMPTS: 5
       LOCKOUT_DURATION: 15m
       TOTP_ISSUER: Containerized CLI Auth
+      TZ: Asia/Kolkata
     volumes:
       - ./data:/data
