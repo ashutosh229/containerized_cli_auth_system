@@ -270,17 +270,90 @@ func (s *Shell) logout(context.Context, []string) error {
 }
 
 func (s *Shell) help(context.Context, []string) error {
+
 	loggedIn := s.sessionID != ""
-	s.printer.Heading("Available Commands")
-	for name, cmd := range s.commandSet {
-		if cmd.authOnly && !loggedIn {
-			continue
-		}
-		if cmd.guestOnly && loggedIn {
-			continue
-		}
-		fmt.Fprintf(s.out, "  %-12s %s\n", name, cmd.description)
+
+	s.printer.Heading("📖 CLI Help")
+	fmt.Fprintln(s.out)
+
+	if !loggedIn {
+
+		fmt.Fprintln(s.out, "You are currently not logged in.")
+		fmt.Fprintln(s.out)
+
+		s.printer.PrintTable([]TableRow{
+			{
+				Icon:  "📝",
+				Label: "register",
+				Value: "Create a new user account",
+			},
+			{
+				Icon:  "🔑",
+				Label: "login",
+				Value: "Login using your username and password",
+			},
+			{
+				Icon:  "🧹",
+				Label: "clear",
+				Value: "Clear the terminal screen",
+			},
+			{
+				Icon:  "📖",
+				Label: "help",
+				Value: "Display this help menu",
+			},
+			{
+				Icon:  "🚪",
+				Label: "exit",
+				Value: "Exit the application",
+			},
+		})
+
+		fmt.Fprintln(s.out)
+		s.printer.Info("Register a new account or login to access more features.")
+
+		return nil
 	}
+
+	fmt.Fprintln(s.out, "Logged in as:", s.username)
+	fmt.Fprintln(s.out)
+
+	s.printer.PrintTable([]TableRow{
+		{
+			Icon:  "👤",
+			Label: "whoami",
+			Value: "Display your account information",
+		},
+		{
+			Icon:  "🔐",
+			Label: "enable-2fa",
+			Value: "Enable Two-Factor Authentication",
+		},
+		{
+			Icon:  "🔓",
+			Label: "disable-2fa",
+			Value: "Disable Two-Factor Authentication",
+		},
+		{
+			Icon:  "🚪",
+			Label: "logout",
+			Value: "Logout from the current session",
+		},
+		{
+			Icon:  "🧹",
+			Label: "clear",
+			Value: "Clear the terminal screen",
+		},
+		{
+			Icon:  "📖",
+			Label: "help",
+			Value: "Display this help menu",
+		},
+	})
+
+	fmt.Fprintln(s.out)
+	s.printer.Info("Logout first if you wish to exit the application.")
+
 	return nil
 }
 
@@ -304,20 +377,53 @@ func (s *Shell) exit(context.Context, []string) error {
 }
 
 func (s *Shell) printUserDetails(session auth.Session) {
+
 	user := session.User
-	fmt.Fprintf(s.out, "Username: %s\n", user.Username)
-	fmt.Fprintf(s.out, "Registration date: %s\n", formatTime(user.RegisteredAt))
-	status := "Disabled"
+
+	status := "🟡 Disabled"
+	statusColor := yellow
+
 	if user.MFAEnabled {
-		status = "Enabled"
+		status = "🟢 Enabled"
+		statusColor = green
 	}
-	fmt.Fprintf(s.out, "MFA status: %s\n", status)
-	fmt.Fprintf(s.out, "Session expiration time: %s\n", formatTime(session.ExpiresAt))
-	if user.LastLoginAt == nil {
-		fmt.Fprintln(s.out, "Last login time: never")
-		return
+
+	lastLogin := "Never"
+
+	if user.LastLoginAt != nil {
+		lastLogin = formatTime(*user.LastLoginAt)
 	}
-	fmt.Fprintf(s.out, "Last login time: %s\n", formatTime(*user.LastLoginAt))
+
+	s.printer.Heading("👤 Account Information")
+
+	s.printer.PrintTable([]TableRow{
+		{
+			Icon:  "👤",
+			Label: "Username",
+			Value: user.Username,
+		},
+		{
+			Icon:  "📅",
+			Label: "Registered On",
+			Value: formatTime(user.RegisteredAt),
+		},
+		{
+			Icon:  "🔐",
+			Label: "Two-Factor Authentication",
+			Value: status,
+			Color: statusColor,
+		},
+		{
+			Icon:  "⏰",
+			Label: "Session Expires",
+			Value: formatTime(session.ExpiresAt),
+		},
+		{
+			Icon:  "🕒",
+			Label: "Last Login",
+			Value: lastLogin,
+		},
+	})
 }
 
 func formatTime(t time.Time) string {
