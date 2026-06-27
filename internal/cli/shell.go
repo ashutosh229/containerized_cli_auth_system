@@ -16,6 +16,7 @@ import (
 type Shell struct {
 	in             io.Reader
 	out            io.Writer
+	printer        *Printer
 	auth           *auth.Service
 	sessionID      string
 	completer      *readline.PrefixCompleter
@@ -33,7 +34,12 @@ type command struct {
 }
 
 func NewShell(in io.Reader, out io.Writer, service *auth.Service) *Shell {
-	s := &Shell{in: in, out: out, auth: service}
+	s := &Shell{
+		in:      in,
+		out:     out,
+		auth:    service,
+		printer: NewPrinter(out),
+	}
 	s.commandSet = map[string]command{
 		"register":   {description: "create a new user", handler: s.register, guestOnly: true},
 		"login":      {description: "login with username/password and optional TOTP", handler: s.login, guestOnly: true},
@@ -102,7 +108,7 @@ func (s *Shell) Run(ctx context.Context) error {
 			if errors.Is(err, errExit) {
 				return nil
 			}
-			fmt.Fprintf(s.out, "Error: %v\n", err)
+			s.printer.Error(err.Error())
 		}
 	}
 }
@@ -120,7 +126,7 @@ func (s *Shell) dispatch(ctx context.Context, args []string) error {
 		if _, err := s.auth.Current(s.sessionID); err != nil {
 			s.sessionID = ""
 			s.updateCompleter()
-			fmt.Fprintln(s.out, "Session expired. Please login again.")
+			s.printer.Warning("Session expired. Please login again.")
 			loggedIn = false
 		}
 	}
@@ -155,7 +161,7 @@ func (s *Shell) register(ctx context.Context, _ []string) error {
 	if _, err := s.auth.Register(ctx, username, password); err != nil {
 		return err
 	}
-	fmt.Fprintln(s.out, "Registration successful. You can now login.")
+	s.printer.Success("Registration successful. You can now login.")
 	return nil
 }
 
@@ -181,7 +187,7 @@ func (s *Shell) login(ctx context.Context, _ []string) error {
 	}
 	s.sessionID = result.Session.ID
 	s.updateCompleter()
-	fmt.Fprintln(s.out, "Login successful.")
+	s.printer.Success("Login successful.")
 	s.printUserDetails(result.Session)
 	return nil
 }
@@ -220,7 +226,7 @@ func (s *Shell) enable2FA(ctx context.Context, _ []string) error {
 	if _, err := s.auth.RefreshSession(ctx, s.sessionID); err != nil {
 		return err
 	}
-	fmt.Fprintln(s.out, "MFA enabled successfully.")
+	s.printer.Success("Two-Factor Authentication enabled successfully.")
 	return nil
 }
 
@@ -246,7 +252,7 @@ func (s *Shell) disable2FA(ctx context.Context, _ []string) error {
 	if _, err := s.auth.RefreshSession(ctx, s.sessionID); err != nil {
 		return err
 	}
-	fmt.Fprintln(s.out, "MFA disabled.")
+	s.printer.Success("Two-Factor Authentication disabled.")
 	return nil
 }
 
@@ -254,13 +260,13 @@ func (s *Shell) logout(context.Context, []string) error {
 	s.auth.Logout(s.sessionID)
 	s.sessionID = ""
 	s.updateCompleter()
-	fmt.Fprintln(s.out, "Logged out.")
+	s.printer.Success("Logged out successfully.")
 	return nil
 }
 
 func (s *Shell) help(context.Context, []string) error {
 	loggedIn := s.sessionID != ""
-	fmt.Fprintln(s.out, "Available commands:")
+	s.printer.Heading("Available Commands")
 	for name, cmd := range s.commandSet {
 		if cmd.authOnly && !loggedIn {
 			continue
@@ -337,7 +343,7 @@ func (s *Shell) printBanner() {
 	fmt.Fprintln(s.out, "│  ✓ Enable Two-Factor Authentication (2FA)                  │")
 	fmt.Fprintln(s.out, "╰────────────────────────────────────────────────────────────╯")
 	fmt.Fprintln(s.out)
-	fmt.Fprintln(s.out, "Getting Started")
+	s.printer.Heading("Getting Started")
 	fmt.Fprintln(s.out, "────────────────")
 	fmt.Fprintln(s.out, "  register    Create a new account")
 	fmt.Fprintln(s.out, "  login       Sign in to your account")
