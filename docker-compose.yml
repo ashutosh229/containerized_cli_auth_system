@@ -11,7 +11,4 @@ services:
       LOCKOUT_DURATION: 15m
       TOTP_ISSUER: Containerized CLI Auth
     volumes:
-      - auth-data:/data
-
-volumes:
-  auth-data:
+      - ./data:/data
