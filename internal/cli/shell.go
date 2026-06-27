@@ -266,9 +266,9 @@ func (s *Shell) printUserDetails(session auth.Session) {
 	user := session.User
 	fmt.Fprintf(s.out, "Username: %s\n", user.Username)
 	fmt.Fprintf(s.out, "Registration date: %s\n", formatTime(user.RegisteredAt))
-	status := "disabled"
+	status := "Disabled"
 	if user.MFAEnabled {
-		status = "enabled"
+		status = "Enabled"
 	}
 	fmt.Fprintf(s.out, "MFA status: %s\n", status)
 	fmt.Fprintf(s.out, "Session expiration time: %s\n", formatTime(session.ExpiresAt))
@@ -280,5 +280,5 @@ func (s *Shell) printUserDetails(session auth.Session) {
 }
 
 func formatTime(t time.Time) string {
-	return t.Local().Format(time.RFC1123)
+	return t.Local().Format("02 Jan 2006, 03:04:05 PM MST")
 }
