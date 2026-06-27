@@ -14,12 +14,15 @@ import (
 )
 
 type Shell struct {
-	in         io.Reader
-	out        io.Writer
-	auth       *auth.Service
-	sessionID  string
-	completer  *readline.PrefixCompleter
-	commandSet map[string]command
+	in             io.Reader
+	out            io.Writer
+	auth           *auth.Service
+	sessionID      string
+	completer      *readline.PrefixCompleter
+	guestCompleter *readline.PrefixCompleter
+	authCompleter  *readline.PrefixCompleter
+	commandSet     map[string]command
+	rl             *readline.Instance
 }
 
 type command struct {
@@ -42,16 +45,20 @@ func NewShell(in io.Reader, out io.Writer, service *auth.Service) *Shell {
 		"help":   {description: "show available commands", handler: s.help},
 		"exit":   {description: "quit program", handler: s.exit, guestOnly: true},
 	}
-	s.completer = readline.NewPrefixCompleter(
+	s.guestCompleter = readline.NewPrefixCompleter(
 		readline.PcItem("register"),
 		readline.PcItem("login"),
+		readline.PcItem("help"),
+		readline.PcItem("exit"),
+	)
+	s.authCompleter = readline.NewPrefixCompleter(
 		readline.PcItem("whoami"),
 		readline.PcItem("enable-2fa"),
 		readline.PcItem("disable-2fa"),
 		readline.PcItem("logout"),
 		readline.PcItem("help"),
-		readline.PcItem("exit"),
 	)
+	s.completer = s.guestCompleter
 	return s
 }
 
@@ -68,16 +75,17 @@ func (s *Shell) Run(ctx context.Context) error {
 	if stdin, ok := s.in.(io.ReadCloser); ok {
 		cfg.Stdin = stdin
 	}
-	rl, err := readline.NewEx(cfg)
+	var err error
+	s.rl, err = readline.NewEx(cfg)
 	if err != nil {
 		return err
 	}
-	defer rl.Close()
+	defer s.rl.Close()
 
 	fmt.Fprintln(s.out, "Secure CLI Login System. Type help for commands.")
 	for {
-		rl.SetPrompt(s.prompt())
-		line, err := rl.Readline()
+		s.rl.SetPrompt(s.prompt())
+		line, err := s.rl.Readline()
 		if errors.Is(err, readline.ErrInterrupt) {
 			continue
 		}
@@ -108,6 +116,7 @@ func (s *Shell) dispatch(ctx context.Context, args []string) error {
 	if loggedIn {
 		if _, err := s.auth.Current(s.sessionID); err != nil {
 			s.sessionID = ""
+			s.updateCompleter()
 			fmt.Fprintln(s.out, "Session expired. Please login again.")
 			loggedIn = false
 		}
@@ -168,6 +177,7 @@ func (s *Shell) login(ctx context.Context, _ []string) error {
 		return err
 	}
 	s.sessionID = result.Session.ID
+	s.updateCompleter()
 	fmt.Fprintln(s.out, "Login successful.")
 	s.printUserDetails(result.Session)
 	return nil
@@ -240,6 +250,7 @@ func (s *Shell) disable2FA(ctx context.Context, _ []string) error {
 func (s *Shell) logout(context.Context, []string) error {
 	s.auth.Logout(s.sessionID)
 	s.sessionID = ""
+	s.updateCompleter()
 	fmt.Fprintln(s.out, "Logged out.")
 	return nil
 }
@@ -284,4 +295,16 @@ func (s *Shell) printUserDetails(session auth.Session) {
 
 func formatTime(t time.Time) string {
 	return t.Local().Format("02 Jan 2006, 03:04:05 PM MST")
+}
+
+func (s *Shell) updateCompleter() {
+	if s.rl == nil {
+		return
+	}
+
+	if s.sessionID == "" {
+		s.rl.Config.AutoComplete = s.guestCompleter
+	} else {
+		s.rl.Config.AutoComplete = s.authCompleter
+	}
 }
