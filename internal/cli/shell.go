@@ -19,6 +19,7 @@ type Shell struct {
 	printer        *Printer
 	auth           *auth.Service
 	sessionID      string
+	username       string
 	completer      *readline.PrefixCompleter
 	guestCompleter *readline.PrefixCompleter
 	authCompleter  *readline.PrefixCompleter
@@ -125,6 +126,7 @@ func (s *Shell) dispatch(ctx context.Context, args []string) error {
 	if loggedIn {
 		if _, err := s.auth.Current(s.sessionID); err != nil {
 			s.sessionID = ""
+			s.username = ""
 			s.updateCompleter()
 			s.printer.Warning("Session expired. Please login again.")
 			loggedIn = false
@@ -144,9 +146,10 @@ func (s *Shell) dispatch(ctx context.Context, args []string) error {
 
 func (s *Shell) prompt() string {
 	if s.sessionID == "" {
-		return "auth> "
+		return "guest > "
 	}
-	return "auth# "
+
+	return fmt.Sprintf("%s > ", s.username)
 }
 
 func (s *Shell) register(ctx context.Context, _ []string) error {
@@ -186,6 +189,7 @@ func (s *Shell) login(ctx context.Context, _ []string) error {
 		return err
 	}
 	s.sessionID = result.Session.ID
+	s.username = result.Session.User.Username
 	s.updateCompleter()
 	s.printer.Success("Login successful.")
 	s.printUserDetails(result.Session)
@@ -259,6 +263,7 @@ func (s *Shell) disable2FA(ctx context.Context, _ []string) error {
 func (s *Shell) logout(context.Context, []string) error {
 	s.auth.Logout(s.sessionID)
 	s.sessionID = ""
+	s.username = ""
 	s.updateCompleter()
 	s.printer.Success("Logged out successfully.")
 	return nil
