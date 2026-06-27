@@ -191,7 +191,7 @@ func (s *Shell) login(ctx context.Context, _ []string) error {
 	s.sessionID = result.Session.ID
 	s.username = result.Session.User.Username
 	s.updateCompleter()
-	s.printer.Success("Login successful.")
+	s.printWelcomeMessage(result.Session)
 	s.printUserDetails(result.Session)
 	return nil
 }
@@ -459,5 +459,34 @@ func (s *Shell) printBanner() {
 	fmt.Fprintln(s.out, "  register    Create a new account")
 	fmt.Fprintln(s.out, "  login       Sign in to your account")
 	fmt.Fprintln(s.out, "  help        Show available commands")
+	fmt.Fprintln(s.out)
+}
+
+func (s *Shell) printWelcomeMessage(session auth.Session) {
+
+	user := session.User
+
+	// First login after registration
+	if user.LastLoginAt == nil {
+
+		s.printer.Success(fmt.Sprintf("Welcome, %s!", user.Username))
+		s.printer.Info("Your account has been created successfully.")
+
+	} else {
+
+		s.printer.Success(fmt.Sprintf("Welcome back, %s!", user.Username))
+		s.printer.Info("You have successfully logged in.")
+	}
+
+	if user.MFAEnabled {
+		s.printer.Success("Your account is protected with Two-Factor Authentication.")
+	} else {
+		s.printer.Warning("Two-Factor Authentication is disabled. Enable it to improve account security.")
+	}
+
+	remaining := time.Until(session.ExpiresAt).Round(time.Minute)
+
+	s.printer.Info(fmt.Sprintf("Your session will expire in %v.", remaining))
+
 	fmt.Fprintln(s.out)
 }
