@@ -40,7 +40,7 @@ func NewShell(in io.Reader, out io.Writer, service *auth.Service) *Shell {
 			handler: s.disable2FA, authOnly: true},
 		"logout": {description: "end current session", handler: s.logout, authOnly: true},
 		"help":   {description: "show available commands", handler: s.help},
-		"exit":   {description: "quit program", handler: s.exit},
+		"exit":   {description: "quit program", handler: s.exit, guestOnly: true},
 	}
 	s.completer = readline.NewPrefixCompleter(
 		readline.PcItem("register"),
@@ -113,10 +113,13 @@ func (s *Shell) dispatch(ctx context.Context, args []string) error {
 		}
 	}
 	if cmd.authOnly && !loggedIn {
-		return errors.New("please login first")
+		return errors.New("Please login first")
 	}
 	if cmd.guestOnly && loggedIn {
-		return errors.New("logout before using this command")
+		if args[0] == "exit" {
+			return errors.New("Please logout before exiting the application")
+		}
+		return errors.New("Logout before using this command")
 	}
 	return cmd.handler(ctx, args[1:])
 }
