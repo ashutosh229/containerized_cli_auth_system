@@ -8,6 +8,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/authcli
 
 FROM debian:bookworm-slim
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --uid 10001 authcli
 WORKDIR /app
 COPY --from=build /out/authcli /usr/local/bin/authcli
