@@ -44,12 +44,14 @@ func NewShell(in io.Reader, out io.Writer, service *auth.Service) *Shell {
 		"logout": {description: "end current session", handler: s.logout, authOnly: true},
 		"help":   {description: "show available commands", handler: s.help},
 		"exit":   {description: "quit program", handler: s.exit, guestOnly: true},
+		"clear":  {description: "clear the terminal screen", handler: s.clear},
 	}
 	s.guestCompleter = readline.NewPrefixCompleter(
 		readline.PcItem("register"),
 		readline.PcItem("login"),
 		readline.PcItem("help"),
 		readline.PcItem("exit"),
+		readline.PcItem("clear"),
 	)
 	s.authCompleter = readline.NewPrefixCompleter(
 		readline.PcItem("whoami"),
@@ -57,6 +59,7 @@ func NewShell(in io.Reader, out io.Writer, service *auth.Service) *Shell {
 		readline.PcItem("disable-2fa"),
 		readline.PcItem("logout"),
 		readline.PcItem("help"),
+		readline.PcItem("clear"),
 	)
 	s.completer = s.guestCompleter
 	return s
@@ -267,6 +270,19 @@ func (s *Shell) help(context.Context, []string) error {
 		}
 		fmt.Fprintf(s.out, "  %-12s %s\n", name, cmd.description)
 	}
+	return nil
+}
+
+func (s *Shell) clear(context.Context, []string) error {
+	// Clear screen
+	fmt.Fprint(s.out, "\033[2J")
+
+	// Move cursor to home position
+	fmt.Fprint(s.out, "\033[H")
+
+	// Clear scrollback buffer (supported by many terminals)
+	fmt.Fprint(s.out, "\033[3J")
+
 	return nil
 }
 
