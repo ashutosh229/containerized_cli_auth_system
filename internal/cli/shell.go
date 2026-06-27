@@ -85,7 +85,7 @@ func (s *Shell) Run(ctx context.Context) error {
 	}
 	defer s.rl.Close()
 
-	fmt.Fprintln(s.out, "Secure CLI Login System. Type help for commands.")
+	s.printBanner()
 	for {
 		s.rl.SetPrompt(s.prompt())
 		line, err := s.rl.Readline()
@@ -323,4 +323,24 @@ func (s *Shell) updateCompleter() {
 	} else {
 		s.rl.Config.AutoComplete = s.authCompleter
 	}
+}
+
+func (s *Shell) printBanner() {
+	fmt.Fprintln(s.out)
+	fmt.Fprintln(s.out, "╭────────────────────────────────────────────────────────────╮")
+	fmt.Fprintln(s.out, "│                 🔐 CLI Login System                        │")
+	fmt.Fprintln(s.out, "├────────────────────────────────────────────────────────────┤")
+	fmt.Fprintln(s.out, "│ Securely manage your account from the command line.        │")
+	fmt.Fprintln(s.out, "│                                                            │")
+	fmt.Fprintln(s.out, "│  ✓ Register a new account                                  │")
+	fmt.Fprintln(s.out, "│  ✓ Login securely                                          │")
+	fmt.Fprintln(s.out, "│  ✓ Enable Two-Factor Authentication (2FA)                  │")
+	fmt.Fprintln(s.out, "╰────────────────────────────────────────────────────────────╯")
+	fmt.Fprintln(s.out)
+	fmt.Fprintln(s.out, "Getting Started")
+	fmt.Fprintln(s.out, "────────────────")
+	fmt.Fprintln(s.out, "  register    Create a new account")
+	fmt.Fprintln(s.out, "  login       Sign in to your account")
+	fmt.Fprintln(s.out, "  help        Show available commands")
+	fmt.Fprintln(s.out)
 }
